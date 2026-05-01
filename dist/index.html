@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dincolo de Ambalaj — Beyond the Wrapper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/assets/index-DlcpLYd3.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CZ-k-Doi.css">
+</head>
+<body>
+
+  <!-- WebGL Canvas -->
+  <canvas id="canvas-bg"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loading">
+    <h1 class="ld-title">Dincolo de ambalaj</h1>
+    <p class="ld-sub">Beyond the Wrapper</p>
+    <div class="ld-track"><div class="ld-fill" id="ld-fill"></div></div>
+    <p class="ld-hint">Sunet oprit implicit · Sound muted by default</p>
+  </div>
+
+  <!-- Fixed UI -->
+  <div id="ui">
+    <div class="ui-brand">
+      <span class="brand-tag">BTW · 001</span>
+      <span class="brand-name">Beyond the Wrapper</span>
+    </div>
+    <div class="ui-sound" id="sound-btn" role="button" aria-label="Activează sunetul" tabindex="0">
+      <span class="ui-sound-lbl" id="sound-lbl">Sound · Off</span>
+      <span class="ui-sound-dot" id="sound-dot"></span>
+    </div>
+    <div class="ui-nav" id="ui-nav">
+      <div class="nav-dot active" data-idx="0" title="Natura"></div>
+      <div class="nav-dot" data-idx="1" title="Planeta"></div>
+      <div class="nav-dot" data-idx="2" title="Chimie"></div>
+      <div class="nav-dot" data-idx="3" title="Poluare"></div>
+      <div class="nav-dot" data-idx="4" title="Degradare"></div>
+      <div class="nav-dot" data-idx="5" title="Ciclu"></div>
+    </div>
+    <div class="ui-section-id" id="sec-id">
+      01 / 06<br />Natura
+    </div>
+  </div>
+
+  <!-- ═══ SCROLL CONTENT ═══ -->
+  <div id="scroll-container">
+
+    <!-- 01 Hero -->
+    <section id="s-hero" data-screen-label="01 Natura">
+      <div class="hero-inner">
+        <h1 class="hero-h1">Dincolo de <em>ambalaj.</em></h1>
+        <p class="hero-p">Plasticul nu este doar un obiect folosit câteva minute. Este un material proiectat să reziste mult după ce dispare din mâna noastră.</p>
+        <p class="hero-meta">
+          <span>06 capitole</span>
+          <span class="rule"></span>
+          <span>~ 4 minute</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- 02 Planet -->
+    <section id="s-planet" data-screen-label="02 Planeta">
+      <div class="planet-sticky">
+        <div class="planet-text">
+          <span class="sec-label sec-label--rule">
+            <span>02</span>
+            <span class="rule"></span>
+            <span>Planeta în ambalaj</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">O planetă nu se sufocă într-o zi. Se acoperă <em>strat cu strat.</em></h2>
+          <p class="sec-p">Ambalaj cu ambalaj, decizie cu decizie. Plasticul nu apare brusc în ocean — ajunge acolo prin sute de gesturi mărunte, fiecare proiectat să fie comod.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 Chemistry -->
+    <section id="s-chem" class="interactive" data-screen-label="03 Chimie">
+      <div class="chem-sticky">
+        <div class="chem-text">
+          <span class="sec-label sec-label--rule">
+            <span>03</span>
+            <span class="rule"></span>
+            <span>Chimia plasticului</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">Înainte să devină deșeu, plasticul este <em class="chem-em">chimie.</em></h2>
+          <p class="sec-p chem-p">Lanțuri de molecule create pentru rezistență, greutate mică și cost redus. Fiecare cod ascunde un compromis între utilitate și persistență.</p>
+          <div class="mol-pills" id="mol-pills">
+            <button class="pill active" data-mol="PET">PET</button>
+            <button class="pill" data-mol="PE">PE</button>
+            <button class="pill" data-mol="PP">PP</button>
+            <button class="pill" data-mol="PVC">PVC</button>
+            <button class="pill" data-mol="PS">PS</button>
+            <button class="pill" data-mol="PLA">PLA</button>
+          </div>
+          <div id="mol-detail" aria-live="polite">
+            <div class="md-head">
+              <p class="md-code" id="md-code">PET</p>
+              <p class="md-formula" id="md-formula">(C₁₀H₈O₄)ₙ</p>
+            </div>
+            <p class="md-name" id="md-name">Polietilen tereftalat</p>
+            <div class="md-grid">
+              <div class="md-cell">
+                <p class="md-label">Utilizare</p>
+                <p class="md-text" id="md-use"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Proprietate</p>
+                <p class="md-text" id="md-property"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Risc</p>
+                <p class="md-text" id="md-risk"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Traseu mai bun</p>
+                <p class="md-text" id="md-better"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 Pollution -->
+    <section id="s-poll" data-screen-label="04 Poluare">
+      <div class="poll-sticky">
+        <div class="poll-text">
+          <span class="sec-label sec-label--rule">
+            <span>04</span>
+            <span class="rule"></span>
+            <span>De la produs la poluare</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">Câteva minute de utilizare. Sute de ani de <em>existență.</em></h2>
+          <p class="sec-p poll-p">Fragmentarea nu înseamnă dispariție. Problema devine prea mică pentru a mai fi văzută ușor — și asta nu o face mai puțin reală.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 Degradation -->
+    <section id="s-degrad" data-screen-label="05 Degradare">
+      <div class="degrad-sticky">
+        <div class="degrad-inner">
+          <span class="sec-label">05 · Degradare vs Biodegradare</span>
+          <h2 class="sec-h2">Nu tot ce<br />dispare dispare<br />cu adevărat.</h2>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot tl-dot--gray"></div>
+              <div>
+                <p class="tl-lbl">Plastic convențional</p>
+                <p class="tl-val">450–1000 de ani</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot tl-dot--green"></div>
+              <div>
+                <p class="tl-lbl">PLA · compostare industrială</p>
+                <p class="tl-val">3–6 luni în condiții controlate</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot tl-dot--blue"></div>
+              <div>
+                <p class="tl-lbl">Microplastic în natură</p>
+                <p class="tl-val">Nu dispare. Se fragmentează.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 Cycle -->
+    <section id="s-cycle" data-screen-label="06 Ciclu">
+      <div class="cycle-sticky">
+        <div class="cycle-inner">
+          <span class="sec-label cycle-label">06 · Redesenarea ciclului</span>
+          <p class="cycle-slogan">Nu trebuie să <strong>ștergem</strong> plasticul.<br />Trebuie să-i <strong>redesenăm traseul.</strong></p>
+          <p class="sec-p cycle-p">Materialele sunt corecte sau greșite în funcție de ciclul pe care îl completează.</p>
+          <div class="cycle-tags">
+            <span class="cycle-tag">Reducere</span>
+            <span class="cycle-tag">Reutilizare</span>
+            <span class="cycle-tag">Reciclare</span>
+            <span class="cycle-tag">Colectare selectivă</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end scroll-container -->
+
+  <!-- Footer -->
+  <footer>
+    <div class="ft-left">Built by Radu-Ștefan Grozav · 2026</div>
+    <div class="ft-right"><a href="https://github.com" target="_blank" rel="noopener">GitHub →</a></div>
+  </footer>
+
+</body>
+</html>

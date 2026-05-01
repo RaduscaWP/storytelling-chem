@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dincolo de Ambalaj — Beyond the Wrapper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/main.scss" />
+</head>
+<body>
+
+  <!-- WebGL Canvas -->
+  <canvas id="canvas-bg"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loading">
+    <h1 class="ld-title">Dincolo de ambalaj</h1>
+    <p class="ld-sub">Beyond the Wrapper</p>
+    <div class="ld-track"><div class="ld-fill" id="ld-fill"></div></div>
+    <p class="ld-hint">Sunet oprit implicit · Sound muted by default</p>
+  </div>
+
+  <!-- Fixed UI -->
+  <div id="ui">
+    <div class="ui-brand">
+      <span class="brand-tag">BTW · 001</span>
+      <span class="brand-name">Beyond the Wrapper</span>
+    </div>
+    <div class="ui-sound" id="sound-btn" role="button" aria-label="Activează sunetul" tabindex="0">
+      <span class="ui-sound-lbl" id="sound-lbl">Sound · Off</span>
+      <span class="ui-sound-dot" id="sound-dot"></span>
+    </div>
+    <div class="ui-nav" id="ui-nav">
+      <div class="nav-dot active" data-idx="0" title="Natura"></div>
+      <div class="nav-dot" data-idx="1" title="Planeta"></div>
+      <div class="nav-dot" data-idx="2" title="Chimie"></div>
+      <div class="nav-dot" data-idx="3" title="Poluare"></div>
+      <div class="nav-dot" data-idx="4" title="Ciclu"></div>
+    </div>
+    <div class="ui-section-id" id="sec-id">
+      01 / 05<br />Natura
+    </div>
+  </div>
+
+  <!-- ═══ SCROLL CONTENT ═══ -->
+  <div id="scroll-container">
+
+    <!-- 01 Hero -->
+    <section id="s-hero" data-screen-label="01 Natura">
+      <div class="hero-inner">
+        <h1 class="hero-h1">Dincolo de <em>ambalaj.</em></h1>
+        <p class="hero-p">Plasticul nu este doar un obiect folosit câteva minute. Este un material proiectat să reziste mult după ce dispare din mâna noastră.</p>
+        <p class="hero-meta">
+          <span>05 capitole</span>
+          <span class="rule"></span>
+          <span>~ 4 minute</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- 02 Planet -->
+    <section id="s-planet" data-screen-label="02 Planeta">
+      <div class="planet-sticky">
+        <div class="planet-text">
+          <span class="sec-label sec-label--rule">
+            <span>02</span>
+            <span class="rule"></span>
+            <span>Planeta în ambalaj</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">O planetă nu se sufocă într-o zi. Se acoperă <em>strat cu strat.</em></h2>
+          <p class="sec-p">Ambalaj cu ambalaj, decizie cu decizie. Plasticul nu apare brusc în ocean — ajunge acolo prin sute de gesturi mărunte, fiecare proiectat să fie comod.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 Chemistry -->
+    <section id="s-chem" class="interactive" data-screen-label="03 Chimie">
+      <div class="chem-sticky">
+        <div class="chem-text">
+          <span class="sec-label sec-label--rule">
+            <span>03</span>
+            <span class="rule"></span>
+            <span>Chimia plasticului</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">Înainte să devină deșeu, plasticul este <em class="chem-em">chimie.</em></h2>
+          <p class="sec-p chem-p">Lanțuri de molecule create pentru rezistență, greutate mică și cost redus. Fiecare cod ascunde un compromis între utilitate și persistență.</p>
+          <div class="mol-pills" id="mol-pills">
+            <button class="pill active" data-mol="PET">PET</button>
+            <button class="pill" data-mol="PE">PE</button>
+            <button class="pill" data-mol="PP">PP</button>
+            <button class="pill" data-mol="PVC">PVC</button>
+            <button class="pill" data-mol="PS">PS</button>
+            <button class="pill" data-mol="PLA">PLA</button>
+          </div>
+          <div id="mol-detail" aria-live="polite">
+            <div class="md-head">
+              <p class="md-code" id="md-code">PET</p>
+              <p class="md-formula" id="md-formula">(C₁₀H₈O₄)ₙ</p>
+            </div>
+            <p class="md-name" id="md-name">Polietilen tereftalat</p>
+            <div class="md-grid">
+              <div class="md-cell">
+                <p class="md-label">Utilizare</p>
+                <p class="md-text" id="md-use"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Proprietate</p>
+                <p class="md-text" id="md-property"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Risc</p>
+                <p class="md-text" id="md-risk"></p>
+              </div>
+              <div class="md-cell">
+                <p class="md-label">Traseu mai bun</p>
+                <p class="md-text" id="md-better"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 Pollution -->
+    <section id="s-poll" data-screen-label="04 Poluare">
+      <div class="poll-sticky">
+
+        <!-- Panel A: text LEFT, bottle on the right -->
+        <div class="poll-text poll-text--a">
+          <span class="sec-label sec-label--rule">
+            <span>04</span>
+            <span class="rule"></span>
+            <span>De la produs la poluare</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">Un ambalaj scurt poate avea o <em>existență lungă.</em></h2>
+          <p class="sec-p poll-p">O sticlă PET este folosită câteva minute. În mediu, se fragmentează decenii. Traseul ei după folosire decide dacă devine resursă sau poluare.</p>
+        </div>
+
+        <!-- Panel B: text RIGHT, bottle on the left -->
+        <div class="poll-text poll-text--b">
+          <span class="sec-label sec-label--rule">
+            <span>04</span>
+            <span class="rule"></span>
+            <span>De la produs la poluare</span>
+          </span>
+          <h2 class="sec-h2 sec-h2--display">Câteva minute de utilizare. Sute de ani de <em>existență.</em></h2>
+          <p class="sec-p poll-p">Fragmentarea nu înseamnă dispariție. Problema devine prea mică pentru a mai fi văzută ușor — și asta nu o face mai puțin reală.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 05 Cycle -->
+    <section id="s-cycle" data-screen-label="05 Ciclu">
+      <div class="cycle-sticky">
+        <div class="cycle-grid">
+          <div class="cycle-text">
+            <span class="sec-label sec-label--rule">
+              <span>05</span><span class="rule"></span><span>Ciclu redesenat</span>
+            </span>
+            <h2 class="cycle-slogan">
+              Nu trebuie să <strong>ștergem</strong> plasticul.<br />
+              Trebuie să-i <em>redesenăm traseul.</em>
+            </h2>
+            <p class="cycle-p">
+              Reducere, reutilizare, reciclare, colectare selectivă.<br />
+              Soluția nu este panică, ci design material mai inteligent.
+            </p>
+            <div class="cycle-cards" id="cycle-cards">
+              <button class="mat-card active" data-mat="PAP">
+                <span class="mat-badge">PAP</span>
+                <div class="mat-body">
+                  <p class="mat-name">Hârtie</p>
+                  <p class="mat-desc">2 saptamani in compost. Cateva luni in groapa de gunoi.</p>
+                </div>
+              </button>
+              <button class="mat-card" data-mat="PET">
+                <span class="mat-badge">PET</span>
+                <div class="mat-body">
+                  <p class="mat-name">Plastic</p>
+                  <p class="mat-desc">450 de ani pana se fragmenteaza. Si tot ramane microplastic.</p>
+                </div>
+              </button>
+              <button class="mat-card" data-mat="GL">
+                <span class="mat-badge">GL</span>
+                <div class="mat-body">
+                  <p class="mat-name">Sticlă</p>
+                  <p class="mat-desc">1 milion de ani in natura. Sau reciclata la infinit.</p>
+                </div>
+              </button>
+              <button class="mat-card" data-mat="ME">
+                <span class="mat-badge">ME</span>
+                <div class="mat-body">
+                  <p class="mat-name">Metal</p>
+                  <p class="mat-desc">200 de ani daca e aruncat. Topit, revine ca aluminiu nou.</p>
+                </div>
+              </button>
+              <button class="mat-card mat-card--wide" data-mat="BIO">
+                <span class="mat-badge">BIO</span>
+                <div class="mat-body">
+                  <p class="mat-name">Biodegradabil</p>
+                  <p class="mat-desc">Cateva luni la compostare industriala. La groapa, decenii.</p>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div class="cycle-3d" id="cycle-3d-anchor"></div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end scroll-container -->
+
+  <!-- Footer -->
+  <footer>
+    <div class="ft-left">Built by Radu-Ștefan Grozav · 2026</div>
+    <div class="ft-right"><a href="https://github.com" target="_blank" rel="noopener">GitHub →</a></div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dincolo de Ambalaj — Beyond the Wrapper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Three.js importmap -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
+
+<style>
+/* ── DESIGN TOKENS ── */
+:root {
+  --bg:           #f5f1e8;
+  --bg-soft:      #faf7ef;
+  --green:        #8fa683;
+  --green-dark:   #4f614a;
+  --blue:         #b9d8df;
+  --glass:        rgba(255,255,255,0.44);
+  --glass-border: rgba(255,255,255,0.68);
+  --text:         #283126;
+  --muted:        rgba(40,49,38,0.58);
+  --fd: 'Cormorant Garamond', Georgia, serif;
+  --fm: 'Space Mono', monospace;
+  --fb: 'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: auto; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fb);
+  overflow-x: hidden;
+}
+
+/* ── CANVAS ── */
+#canvas-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── LOADING ── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 1.3s cubic-bezier(0.76, 0, 0.24, 1);
+}
+#loading.out { transform: translateY(-100vh); }
+
+.ld-title {
+  font-family: var(--fd);
+  font-size: clamp(2.4rem, 6vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.ld-title.in { opacity: 1; transform: translateY(0); }
+.ld-sub {
+  font-family: var(--fm);
+  font-size: 0.55rem;
+  letter-spacing: 0.4em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 3.5rem;
+  opacity: 0;
+  transition: opacity 0.8s ease 0.3s;
+}
+.ld-sub.in { opacity: 1; }
+.ld-track {
+  width: 200px; height: 1px;
+  background: rgba(40,49,38,0.12);
+  position: relative;
+  overflow: hidden;
+}
+.ld-fill {
+  position: absolute; top: 0; left: 0;
+  height: 100%; width: 0;
+  background: var(--green-dark);
+}
+.ld-hint {
+  position: absolute;
+  bottom: 2.5rem;
+  font-family: var(--fm);
+  font-size: 0.5rem;
+  letter-spacing: 0.25em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── FIXED UI ── */
+#ui {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+.ui-logo {
+  position: absolute; top: 2rem; left: 2.5rem;
+  font-family: var(--fm);
+  font-size: 0.58rem;
+  letter-spacing: 0.35em;
+  color: var(--text);
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.ui-sound {
+  position: absolute; bottom: 2rem; left: 2.5rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  cursor: pointer; pointer-events: auto;
+}
+.ui-sound-ring {
+  width: 30px; height: 30px;
+  border: 1px solid rgba(40,49,38,0.28);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.3s, background 0.3s;
+}
+.ui-sound:hover .ui-sound-ring {
+  border-color: var(--text);
+  background: rgba(40,49,38,0.04);
+}
+.ui-sound-lbl {
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.28em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.ui-nav {
+  position: absolute; right: 2rem; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 0.6rem;
+  align-items: flex-end;
+}
+.nav-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(40,49,38,0.2);
+  cursor: pointer; pointer-events: auto;
+  transition: background 0.4s, transform 0.4s, width 0.4s;
+}
+.nav-dot.active {
+  background: var(--green-dark);
+  transform: scale(1.6);
+}
+.ui-section-id {
+  position: absolute; bottom: 2rem; right: 2.5rem;
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-transform: uppercase;
+  text-align: right;
+  line-height: 1.8;
+}
+
+/* ── SCROLL ARROW ── */
+.scroll-cue {
+  position: absolute; bottom: 2.5rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  pointer-events: none;
+}
+.scroll-line {
+  width: 1px; height: 44px;
+  background: linear-gradient(to bottom, rgba(40,49,38,0.5), transparent);
+  animation: scPulse 2.2s ease-in-out infinite;
+}
+@keyframes scPulse {
+  0%,100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 0.8; transform: scaleY(1.15); }
+}
+.scroll-lbl {
+  font-family: var(--fm);
+  font-size: 0.43rem;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── SECTIONS ── */
+#scroll-container { position: relative; z-index: 10; }
+section { min-height: 100vh; position: relative; pointer-events: none; }
+section.interactive { pointer-events: auto; }
+
+/* ── 01 HERO ── */
+#s-hero {
+  display: flex; align-items: flex-end;
+  padding: 0 3rem 8rem;
+}
+.hero-inner { max-width: 580px; }
+.hero-eye {
+  font-family: var(--fm);
+  font-size: 0.5rem;
+  letter-spacing: 0.38em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 1.6rem;
+  opacity: 0;
+}
+.hero-h1 {
+  font-family: var(--fd);
+  font-size: clamp(3.8rem, 8vw, 7.5rem);
+  font-weight: 300;
+  line-height: 0.92;
+  color: var(--text);
+  margin-bottom: 2rem;
+  opacity: 0;
+}
+.hero-h1 em { font-style: italic; color: var(--green-dark); }
+.hero-p {
+  font-family: var(--fb);
+  font-size: 0.9rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 380px;
+  opacity: 0;
+  text-wrap: pretty;
+}
+
+/* ── 02 PLANET ── */
+#s-planet { min-height: 220vh; }
+.planet-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; align-items: center;
+  justify-content: flex-end; padding-right: 6rem;
+}
+.planet-text { max-width: 300px; text-align: right; }
+
+/* ── SHARED SECTION TEXT ── */
+.sec-label {
+  display: block;
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.35em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 1.8rem;
+}
+.sec-h2 {
+  font-family: var(--fd);
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 1.4rem;
+}
+.sec-p {
+  font-family: var(--fb);
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* ── 03 CHEMISTRY ── */
+#s-chem { min-height: 240vh; }
+.chem-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: flex-start; justify-content: center;
+  padding: 0 4rem;
+}
+.chem-top { padding-top: 4rem; }
+.mol-pills {
+  display: flex; gap: 0.7rem;
+  margin-top: auto; padding-bottom: 5rem;
+  flex-wrap: wrap;
+}
+.pill {
+  font-family: var(--fm);
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  padding: 0.55rem 1.2rem;
+  border: 1px solid rgba(40,49,38,0.18);
+  border-radius: 2rem;
+  cursor: pointer;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.28s ease;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.pill:hover { background: rgba(40,49,38,0.06); border-color: rgba(40,49,38,0.4); color: var(--text); }
+.pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ── MOL DETAIL PANEL ── */
+#mol-detail {
+  position: fixed; top: 50%; left: 3rem;
+  transform: translateY(-50%);
+  width: 272px;
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  padding: 1.8rem;
+  opacity: 0; pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  transform: translateY(-50%) translateX(-8px);
+}
+#mol-detail.vis {
+  opacity: 1; pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
+}
+.md-code {
+  font-family: var(--fm);
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.md-name {
+  font-family: var(--fd);
+  font-size: 1.55rem;
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.md-formula {
+  font-family: var(--fm);
+  font-size: 0.65rem;
+  color: var(--green-dark);
+  margin-bottom: 1.4rem;
+}
+.md-bullets { list-style: none; margin-bottom: 1.4rem; }
+.md-bullets li {
+  font-family: var(--fb);
+  font-size: 0.72rem;
+  font-weight: 300;
+  color: var(--muted);
+  padding: 0.38rem 0;
+  border-bottom: 1px solid rgba(40,49,38,0.07);
+  line-height: 1.55;
+}
+.md-bullets li::before { content: '— '; color: var(--green); }
+.md-close {
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.25em;
+  color: var(--muted);
+  cursor: pointer;
+  text-transform: uppercase;
+  border: none; background: none; padding: 0;
+  transition: color 0.2s;
+}
+.md-close:hover { color: var(--text); }
+
+/* ── 04 POLLUTION ── */
+#s-poll { min-height: 200vh; }
+.poll-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; align-items: center;
+  justify-content: flex-end; padding-right: 5rem;
+}
+.poll-text { max-width: 295px; text-align: right; }
+
+/* ── 05 DEGRADATION ── */
+#s-degrad { min-height: 200vh; }
+.degrad-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; align-items: center;
+  padding-left: 5rem;
+}
+.degrad-inner { max-width: 310px; }
+.timeline { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+.tl-item { display: flex; align-items: flex-start; gap: 1rem; }
+.tl-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-lbl {
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+.tl-val {
+  font-family: var(--fd);
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--text);
+}
+
+/* ── 06 CYCLE ── */
+#s-cycle { min-height: 200vh; }
+.cycle-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+.cycle-inner { max-width: 500px; }
+.cycle-slogan {
+  font-family: var(--fd);
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+.cycle-slogan strong { font-style: normal; font-weight: 600; color: var(--green-dark); }
+.cycle-tags {
+  display: flex; gap: 0.6rem;
+  justify-content: center; flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.cycle-tag {
+  font-family: var(--fm);
+  font-size: 0.48rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid rgba(143,166,131,0.4);
+  border-radius: 2rem;
+  color: var(--green-dark);
+}
+
+/* ── FOOTER ── */
+footer {
+  background: var(--text);
+  padding: 3rem 3rem;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative; z-index: 20; pointer-events: auto;
+}
+.ft-left {
+  font-family: var(--fm);
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
+  color: rgba(250,247,239,0.5);
+  text-transform: uppercase;
+}
+.ft-right a {
+  font-family: var(--fm);
+  font-size: 0.52rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(250,247,239,0.5);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(250,247,239,0.18);
+  padding-bottom: 2px;
+  transition: color 0.3s, border-color 0.3s;
+}
+.ft-right a:hover { color: rgba(250,247,239,1); border-color: rgba(250,247,239,0.5); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  #s-hero { padding: 0 1.5rem 6rem; }
+  .planet-sticky { padding: 1.5rem; justify-content: flex-start; }
+  .planet-text { text-align: left; max-width: 280px; }
+  .chem-sticky { padding: 0 1.5rem; }
+  #mol-detail { left: 1rem; right: 1rem; width: auto; }
+  .poll-sticky { padding: 0 1.5rem; justify-content: flex-start; }
+  .poll-text { text-align: left; }
+  .degrad-sticky { padding-left: 1.5rem; }
+  .ui-nav { display: none; }
+  footer { flex-direction: column; gap: 1.2rem; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.1ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- WebGL Canvas -->
+<canvas id="canvas-bg"></canvas>
+
+<!-- Loading Screen -->
+<div id="loading">
+  <h1 class="ld-title">Dincolo de ambalaj</h1>
+  <p class="ld-sub">Beyond the Wrapper</p>
+  <div class="ld-track"><div class="ld-fill" id="ld-fill"></div></div>
+  <p class="ld-hint">Sunet oprit implicit · Sound muted by default</p>
+</div>
+
+<!-- Fixed UI -->
+<div id="ui">
+  <div class="ui-logo">BTW</div>
+  <div class="ui-sound" id="sound-btn" role="button" aria-label="Activează sunetul" tabindex="0">
+    <div class="ui-sound-ring">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+        <path d="M1 3H3L6 1V9L3 7H1V3Z" stroke="#283126" stroke-width="0.9" fill="none"/>
+        <path id="w1" d="M7.5 3.5C8.4 4.2 8.4 5.8 7.5 6.5" stroke="#283126" stroke-width="0.9" fill="none"/>
+        <path id="w2" d="M9 2.5C10.6 3.7 10.6 6.3 9 7.5" stroke="#283126" stroke-width="0.9" fill="none" opacity="0.35"/>
+      </svg>
+    </div>
+    <span class="ui-sound-lbl" id="sound-lbl">Sunet oprit</span>
+  </div>
+  <div class="ui-nav" id="ui-nav">
+    <div class="nav-dot active" data-idx="0" title="Natura"></div>
+    <div class="nav-dot" data-idx="1" title="Planeta"></div>
+    <div class="nav-dot" data-idx="2" title="Chimie"></div>
+    <div class="nav-dot" data-idx="3" title="Poluare"></div>
+    <div class="nav-dot" data-idx="4" title="Degradare"></div>
+    <div class="nav-dot" data-idx="5" title="Ciclu"></div>
+  </div>
+  <div class="ui-section-id" id="sec-id">
+    01 / 06<br>Natura
+  </div>
+</div>
+
+<!-- Molecule Detail Panel -->
+<div id="mol-detail" aria-live="polite">
+  <p class="md-code" id="md-code">PET</p>
+  <p class="md-name" id="md-name">Polietilen tereftalat</p>
+  <p class="md-formula" id="md-formula">(C₁₀H₈O₄)ₙ</p>
+  <ul class="md-bullets" id="md-bullets"></ul>
+  <button class="md-close" id="md-close" aria-label="Închide detalii">ESC · Închide</button>
+</div>
+
+<!-- ═══ SCROLL CONTENT ═══ -->
+<div id="scroll-container">
+
+  <!-- 01 Hero -->
+  <section id="s-hero" data-screen-label="01 Natura">
+    <div class="hero-inner">
+      <p class="hero-eye">01 · Natura înainte de ambalaj</p>
+      <h1 class="hero-h1">Dincolo<br>de <em>ambalaj</em></h1>
+      <p class="hero-p">Plasticul nu este doar un obiect folosit câteva minute. Este un material proiectat să reziste mult după ce dispare din mâna noastră.</p>
+    </div>
+    <div class="scroll-cue">
+      <div class="scroll-line"></div>
+      <span class="scroll-lbl">scroll</span>
+    </div>
+  </section>
+
+  <!-- 02 Planet -->
+  <section id="s-planet" data-screen-label="02 Planeta">
+    <div class="planet-sticky">
+      <div class="planet-text">
+        <span class="sec-label">02 · Planeta învelită</span>
+        <h2 class="sec-h2">O planetă<br>nu se sufocă<br>într-o zi.</h2>
+        <p class="sec-p">Se acoperă strat cu strat, ambalaj cu ambalaj, decizie cu decizie.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 Chemistry -->
+  <section id="s-chem" class="interactive" data-screen-label="03 Chimie">
+    <div class="chem-sticky">
+      <div class="chem-top">
+        <span class="sec-label">03 · Chimia plasticului</span>
+        <h2 class="sec-h2">Înainte să devină deșeu,<br>plasticul este <em style="font-family:var(--fd);font-style:italic">chimie.</em></h2>
+        <p class="sec-p" style="max-width:320px;margin-top:0.8rem;">Lanțuri de molecule create pentru rezistență, greutate mică și cost redus. Selectează un material.</p>
+      </div>
+      <div class="mol-pills" id="mol-pills">
+        <button class="pill active" data-mol="PET">PET</button>
+        <button class="pill" data-mol="PE">PE</button>
+        <button class="pill" data-mol="PP">PP</button>
+        <button class="pill" data-mol="PVC">PVC</button>
+        <button class="pill" data-mol="PS">PS</button>
+        <button class="pill" data-mol="PLA">PLA</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 Pollution -->
+  <section id="s-poll" data-screen-label="04 Poluare">
+    <div class="poll-sticky">
+      <div class="poll-text">
+        <span class="sec-label">04 · De la produs la poluare</span>
+        <h2 class="sec-h2">Câteva minute<br>de utilizare.<br>Sute de ani<br>de existență.</h2>
+        <p class="sec-p" style="margin-top:1.2rem;">Fragmentarea nu înseamnă dispariție. Problema devine prea mică pentru a mai fi văzută.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Degradation -->
+  <section id="s-degrad" data-screen-label="05 Degradare">
+    <div class="degrad-sticky">
+      <div class="degrad-inner">
+        <span class="sec-label">05 · Degradare vs Biodegradare</span>
+        <h2 class="sec-h2">Nu tot ce<br>dispare dispare<br>cu adevărat.</h2>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot" style="background:rgba(40,49,38,0.35)"></div>
+            <div>
+              <p class="tl-lbl">Plastic convențional</p>
+              <p class="tl-val">450–1000 de ani</p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:var(--green)"></div>
+            <div>
+              <p class="tl-lbl">PLA · compostare industrială</p>
+              <p class="tl-val">3–6 luni în condiții controlate</p>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:var(--blue)"></div>
+            <div>
+              <p class="tl-lbl">Microplastic în natură</p>
+              <p class="tl-val">Nu dispare. Se fragmentează.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 Cycle -->
+  <section id="s-cycle" data-screen-label="06 Ciclu">
+    <div class="cycle-sticky">
+      <div class="cycle-inner">
+        <span class="sec-label" style="display:block;text-align:center;">06 · Redesenarea ciclului</span>
+        <p class="cycle-slogan">Nu trebuie să <strong>ștergem</strong> plasticul.<br>Trebuie să-i <strong>redesenăm traseul.</strong></p>
+        <p class="sec-p" style="opacity:0.75;">Materialele sunt corecte sau greșite în funcție de ciclul pe care îl completează.</p>
+        <div class="cycle-tags">
+          <span class="cycle-tag">Reducere</span>
+          <span class="cycle-tag">Reutilizare</span>
+          <span class="cycle-tag">Reciclare</span>
+          <span class="cycle-tag">Colectare selectivă</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- end scroll-container -->
+
+<!-- Footer -->
+<footer>
+  <div class="ft-left">Built by Radu-Ștefan Grozav · 2024</div>
+  <div class="ft-right"><a href="https://github.com" target="_blank" rel="noopener">GitHub →</a></div>
+</footer>
+
+<!-- ═══ THREE.JS ENGINE ═══ -->
+<script type="module">
+import * as THREE from 'three';
+
+const canvas  = document.getElementById('canvas-bg');
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+const isMob   = W() < 768;
+
+/* ── RENDERER ── */
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMob });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMob ? 1.5 : 2));
+renderer.setSize(W(), H());
+renderer.setClearColor(0x000000, 0);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, W()/H(), 0.1, 100);
+camera.position.set(0, 0, 5.2);
+
+/* ── LIGHTS ── */
+scene.add(new THREE.AmbientLight(0xf5f1e8, 1.4));
+const sun = new THREE.DirectionalLight(0xfcf8f0, 2.2);
+sun.position.set(4, 5, 4);
+scene.add(sun);
+const rim = new THREE.DirectionalLight(0xb9d8df, 0.9);
+rim.position.set(-3, -2, -2);
+scene.add(rim);
+const fill = new THREE.PointLight(0x8fa683, 2, 12);
+fill.position.set(-2, 1.5, 3);
+scene.add(fill);
+
+/* ── BG PARTICLES ── */
+const PC = isMob ? 160 : 400;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(PC * 3);
+const pSpd = new Float32Array(PC);
+const pOff = new Float32Array(PC);
+for (let i = 0; i < PC; i++) {
+  pPos[i*3]   = (Math.random()-0.5)*16;
+  pPos[i*3+1] = (Math.random()-0.5)*9;
+  pPos[i*3+2] = (Math.random()-0.5)*5;
+  pSpd[i]     = Math.random()*0.0025+0.0008;
+  pOff[i]     = Math.random()*Math.PI*2;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({
+  color: 0x8fa683, size: 0.045, transparent: true, opacity: 0.45,
+  sizeAttenuation: true, depthWrite: false
+});
+const pts = new THREE.Points(pGeo, pMat);
+scene.add(pts);
+
+/* ── EARTH ── */
+const earthG = new THREE.Group();
+const eGeo  = new THREE.SphereGeometry(1, 56, 56);
+// Vertex-colored earth
+const eCol  = new Float32Array(eGeo.attributes.position.count * 3);
+for (let i = 0; i < eGeo.attributes.position.count; i++) {
+  const x = eGeo.attributes.position.getX(i);
+  const y = eGeo.attributes.position.getY(i);
+  const z = eGeo.attributes.position.getZ(i);
+  const n = Math.sin(x*5+1.2)*Math.cos(z*4.3+0.7)*Math.sin(y*6+2.0);
+  if (Math.abs(y) > 0.88) { eCol[i*3]=0.9; eCol[i*3+1]=0.94; eCol[i*3+2]=0.98; }
+  else if (n > 0.12) { eCol[i*3]=0.3; eCol[i*3+1]=0.46; eCol[i*3+2]=0.28; }
+  else { eCol[i*3]=0.22; eCol[i*3+1]=0.46; eCol[i*3+2]=0.7; }
+}
+eGeo.setAttribute('color', new THREE.BufferAttribute(eCol, 3));
+const eMat  = new THREE.MeshPhongMaterial({ vertexColors: true, specular: 0x336688, shininess: 55 });
+earthG.add(new THREE.Mesh(eGeo, eMat));
+
+// Plastic wrap
+const wGeo = new THREE.SphereGeometry(1.09, 64, 64);
+const wMat = new THREE.MeshPhysicalMaterial({
+  color: 0xddf0f8, transparent: true, opacity: 0,
+  roughness: 0.02, transmission: 0.9, thickness: 0.5,
+  depthWrite: false, side: THREE.DoubleSide
+});
+const wrapMesh = new THREE.Mesh(wGeo, wMat);
+earthG.add(wrapMesh);
+
+// Deformed wrap fold
+const fGeo = new THREE.SphereGeometry(1.095, 40, 40);
+const fPos = fGeo.attributes.position;
+for (let i = 0; i < fPos.count; i++) {
+  const x=fPos.getX(i), y=fPos.getY(i), z=fPos.getZ(i);
+  const d = 0.016*(Math.sin(x*9+y*7)*Math.cos(z*8+x*6));
+  const l = Math.sqrt(x*x+y*y+z*z);
+  fPos.setXYZ(i, x/l*(1.095+d), y/l*(1.095+d), z/l*(1.095+d));
+}
+fGeo.computeVertexNormals();
+const fMat = new THREE.MeshPhysicalMaterial({
+  color: 0xeaf8fc, transparent: true, opacity: 0,
+  roughness: 0.04, depthWrite: false
+});
+const foldMesh = new THREE.Mesh(fGeo, fMat);
+earthG.add(foldMesh);
+earthG.visible = false;
+scene.add(earthG);
+
+/* ── MOLECULE DATA ── */
+const molData = {
+  PET: {
+    name:'Polietilen tereftalat', formula:'(C₁₀H₈O₄)ₙ',
+    bullets:['Sticle și recipiente alimentare','Transparent, rezistent, ușor','Cod de reciclare #1 — cel mai reciclat','PET-ul devine resursă sau poluare în funcție de traseu'],
+    atoms:[
+      {p:[0,0,0],r:0.22,c:0x2e2e2e},{p:[0.5,0.3,0],r:0.22,c:0x2e2e2e},{p:[1.0,0,0],r:0.22,c:0x2e2e2e},
+      {p:[1.0,-0.55,0],r:0.22,c:0x2e2e2e},{p:[0.5,-0.82,0],r:0.22,c:0x2e2e2e},{p:[0,-0.55,0],r:0.22,c:0x2e2e2e},
+      {p:[1.6,0.05,0],r:0.19,c:0xb03030},{p:[2.15,0.05,0],r:0.19,c:0xb03030},
+      {p:[2.5,0,0],r:0.22,c:0x2e2e2e},{p:[3.0,0,0],r:0.22,c:0x2e2e2e},
+      {p:[-0.6,-0.05,0],r:0.19,c:0xb03030},{p:[-1.1,-0.05,0],r:0.22,c:0x2e2e2e},
+    ],
+    bonds:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[2,6],[6,7],[7,8],[8,9],[0,10],[10,11]]
+  },
+  PE: {
+    name:'Polietilenă', formula:'(−CH₂−CH₂−)ₙ',
+    bullets:['Pungi, folii, ambalaje flexibile','Cel mai produs plastic global','Rezistă la apă, ușor, ieftin','Persistă 100–500 ani și se fragmentează'],
+    atoms:[
+      {p:[-1.5,0.35,0],r:0.22,c:0x2e2e2e},{p:[-0.7,-0.35,0],r:0.22,c:0x2e2e2e},
+      {p:[0,0.35,0],r:0.22,c:0x2e2e2e},{p:[0.7,-0.35,0],r:0.22,c:0x2e2e2e},
+      {p:[1.5,0.35,0],r:0.22,c:0x2e2e2e},
+      {p:[-1.5,0.35,0.45],r:0.1,c:0xd0d0d0},{p:[0,0.35,0.45],r:0.1,c:0xd0d0d0},
+      {p:[1.5,0.35,0.45],r:0.1,c:0xd0d0d0},
+    ],
+    bonds:[[0,1],[1,2],[2,3],[3,4],[0,5],[2,6],[4,7]]
+  },
+  PP: {
+    name:'Polipropilenă', formula:'(−CH₂−CH(CH₃)−)ₙ',
+    bullets:['Capace, recipiente, ambalaje rigide','Rezistență termică și chimică bună','Reciclare variabilă după infrastructură','Necesită design pentru colectare și sortare'],
+    atoms:[
+      {p:[-1.2,0,0],r:0.22,c:0x2e2e2e},{p:[-0.35,0.45,0],r:0.22,c:0x2e2e2e},
+      {p:[0.5,-0.1,0],r:0.22,c:0x2e2e2e},{p:[1.35,0.45,0],r:0.22,c:0x2e2e2e},
+      {p:[-0.35,1.15,0],r:0.18,c:0x2e2e2e},{p:[1.35,1.15,0],r:0.18,c:0x2e2e2e},
+    ],
+    bonds:[[0,1],[1,2],[2,3],[1,4],[3,5]]
+  },
+  PVC: {
+    name:'Policlorură de vinil', formula:'(−CH₂−CHCl−)ₙ',
+    bullets:['Țevi, construcții, materiale rigide','Durabil, rigid sau flexibil prin aditivi','Clorul face reciclarea mai complexă','Separare corectă la colectare selectivă'],
+    atoms:[
+      {p:[-1.2,-0.3,0],r:0.22,c:0x2e2e2e},{p:[-0.2,0.3,0],r:0.22,c:0x2e2e2e},
+      {p:[0.7,-0.3,0],r:0.22,c:0x2e2e2e},{p:[1.7,0.3,0],r:0.22,c:0x2e2e2e},
+      {p:[-0.2,1.1,0],r:0.32,c:0x4a7c59},{p:[1.7,1.1,0],r:0.32,c:0x4a7c59},
+    ],
+    bonds:[[0,1],[1,2],[2,3],[1,4],[3,5]]
+  },
+  PS: {
+    name:'Polistiren', formula:'(−CH₂−CH(C₆H₅)−)ₙ',
+    bullets:['Caserole, pahare, spumă polistirenică','Ușor, izolator, fragil mecanic','Se fragmentează rapid în microparticule','Înlocuire cu alternative acolo unde e posibil'],
+    atoms:[
+      {p:[-0.8,0,0],r:0.22,c:0x2e2e2e},{p:[0,0.45,0],r:0.22,c:0x2e2e2e},
+      {p:[0.8,0,0],r:0.22,c:0x2e2e2e},
+      {p:[0,1.15,0.05],r:0.18,c:0x2e2e2e},{p:[0.55,1.5,0.05],r:0.18,c:0x2e2e2e},
+      {p:[0.55,2.15,0.05],r:0.18,c:0x2e2e2e},{p:[0,2.5,0.05],r:0.18,c:0x2e2e2e},
+      {p:[-0.55,2.15,0.05],r:0.18,c:0x2e2e2e},{p:[-0.55,1.5,0.05],r:0.18,c:0x2e2e2e},
+    ],
+    bonds:[[0,1],[1,2],[1,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,3]]
+  },
+  PLA: {
+    name:'Acid polilactic', formula:'(C₃H₄O₂)ₙ',
+    bullets:['Origine parțial bio-based','Nu dispare magic în natură','Necesită compostare industrială','Alternativă viabilă în sisteme controlate'],
+    atoms:[
+      {p:[-1.2,0,0],r:0.22,c:0x2e2e2e},{p:[-0.3,0.45,0],r:0.22,c:0x2e2e2e},
+      {p:[0.55,-0.15,0],r:0.19,c:0xb03030},{p:[1.35,0.45,0],r:0.22,c:0x2e2e2e},
+      {p:[2.1,-0.15,0],r:0.19,c:0xb03030},{p:[-0.3,1.2,0],r:0.15,c:0xe0e0e0},
+    ],
+    bonds:[[0,1],[1,2],[2,3],[3,4],[1,5]]
+  }
+};
+
+/* ── MOLECULE GROUP ── */
+const molG = new THREE.Group();
+molG.visible = false;
+molG.position.set(0.6, 0, 0);
+scene.add(molG);
+
+function buildMol(key) {
+  while(molG.children.length) {
+    const c = molG.children[0];
+    c.geometry?.dispose(); c.material?.dispose(); molG.remove(c);
+  }
+  const d = molData[key]; if(!d) return;
+  d.atoms.forEach(a => {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(a.r, 16, 16),
+      new THREE.MeshStandardMaterial({ color:a.c, roughness:0.28, metalness:0.05 })
+    );
+    m.position.set(...a.p); molG.add(m);
+  });
+  (d.bonds||[]).forEach(([i,j]) => {
+    const v1 = new THREE.Vector3(...d.atoms[i].p);
+    const v2 = new THREE.Vector3(...d.atoms[j].p);
+    const len = v1.distanceTo(v2);
+    const mid = v1.clone().add(v2).multiplyScalar(0.5);
+    const bm  = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04,0.04,len,8),
+      new THREE.MeshStandardMaterial({ color:0x888888, roughness:0.5 })
+    );
+    bm.position.copy(mid);
+    bm.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0,1,0), v2.clone().sub(v1).normalize()
+    );
+    molG.add(bm);
+  });
+  // Centre molecule
+  const box = new THREE.Box3().setFromObject(molG);
+  const ctr = box.getCenter(new THREE.Vector3());
+  molG.children.forEach(c => c.position.sub(ctr));
+}
+buildMol('PET');
+
+/* ── PET BOTTLE ── */
+const bottleG = new THREE.Group();
+bottleG.visible = false;
+bottleG.scale.setScalar(0.65);
+scene.add(bottleG);
+
+const bPts = [
+  [0,0],[0.16,0],[0.2,0.08],[0.24,0.3],[0.27,0.7],
+  [0.3,1.1],[0.3,1.6],[0.27,2.0],[0.24,2.4],[0.18,2.7],
+  [0.14,2.95],[0.1,3.12],[0.09,3.32],[0.08,3.45],[0.08,3.62],[0.1,3.74],[0.12,3.82]
+].map(([x,y]) => new THREE.Vector2(x, y-1.91));
+
+const bottleMesh = new THREE.Mesh(
+  new THREE.LatheGeometry(bPts, 40),
+  new THREE.MeshPhysicalMaterial({
+    color:0xcce8f5, transparent:true, opacity:0.42,
+    roughness:0.04, transmission:0.55, thickness:0.6,
+    side:THREE.DoubleSide
+  })
+);
+bottleG.add(bottleMesh);
+
+const capMesh = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.12,0.12,0.14,16),
+  new THREE.MeshStandardMaterial({ color:0x8fa683, roughness:0.35 })
+);
+capMesh.position.y = 1.91;
+bottleG.add(capMesh);
+
+// Fragments
+const frags = [];
+for (let i = 0; i < (isMob?14:28); i++) {
+  const fm = new THREE.Mesh(
+    new THREE.BoxGeometry(Math.random()*0.22+0.05, Math.random()*0.14+0.03, Math.random()*0.1+0.02),
+    new THREE.MeshPhysicalMaterial({ color:0xcce8f5, transparent:true, opacity:0, roughness:0.08, side:THREE.DoubleSide })
+  );
+  const a = Math.random()*Math.PI*2, r = Math.random()*0.9+0.3;
+  fm.position.set(Math.cos(a)*r, (Math.random()-0.5)*2.8, Math.sin(a)*r);
+  fm.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+  fm.userData.dr = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.003 };
+  bottleG.add(fm); frags.push(fm);
+}
+
+/* ── MICRO-PARTICLES (degradation) ── */
+const degradG = new THREE.Group();
+degradG.visible = false;
+scene.add(degradG);
+
+// Conventional plastic block
+const plasticB = new THREE.Mesh(
+  new THREE.BoxGeometry(0.7,1.5,0.1),
+  new THREE.MeshPhysicalMaterial({ color:0xccebf8, transparent:true, opacity:0.5, roughness:0.04, side:THREE.DoubleSide })
+);
+plasticB.position.set(-1.3, 0, 0);
+degradG.add(plasticB);
+
+// Bio piece
+const bioMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.55, 24, 24),
+  new THREE.MeshStandardMaterial({ color:0x7aba7a, roughness:0.65, transparent:true, opacity:0.55 })
+);
+bioMesh.position.set(1.3, 0, 0);
+degradG.add(bioMesh);
+
+// Micro-fragments
+const mFrgs = [];
+for (let i = 0; i < (isMob?35:70); i++) {
+  const mf = new THREE.Mesh(
+    new THREE.SphereGeometry(Math.random()*0.045+0.01, 4, 4),
+    new THREE.MeshBasicMaterial({ color:0xb9d8df, transparent:true, opacity:0 })
+  );
+  mf.position.set(-1.3+(Math.random()-0.5)*1.8, (Math.random()-0.5)*2.2, (Math.random()-0.5)*0.6);
+  mf.userData.dr = { x:(Math.random()-0.5)*0.005, y:(Math.random()-0.5)*0.004 };
+  degradG.add(mf); mFrgs.push(mf);
+}
+
+/* ── CLEANER CYCLE RING ── */
+const cycleG = new THREE.Group();
+cycleG.visible = false;
+scene.add(cycleG);
+
+const ringM = new THREE.Mesh(
+  new THREE.TorusGeometry(1.5, 0.014, 8, 100),
+  new THREE.MeshStandardMaterial({ color:0x8fa683, roughness:0.3, transparent:true, opacity:0.55 })
+);
+ringM.rotation.x = Math.PI*0.22;
+cycleG.add(ringM);
+
+// Second thinner ring
+const ring2 = new THREE.Mesh(
+  new THREE.TorusGeometry(1.5, 0.005, 6, 100),
+  new THREE.MeshStandardMaterial({ color:0x4f614a, roughness:0.5, transparent:true, opacity:0.3 })
+);
+ring2.rotation.x = Math.PI*0.22;
+ring2.rotation.z = Math.PI*0.1;
+cycleG.add(ring2);
+
+const cycleCols = [0x8fa683, 0x9dbf8a, 0xb9d8df, 0x6b9e8a];
+for (let i = 0; i < 4; i++) {
+  const a = (i/4)*Math.PI*2;
+  const rx = Math.PI*0.22;
+  const x = Math.cos(a)*1.5;
+  const y = Math.sin(a)*1.5*Math.cos(rx);
+  const z = Math.sin(a)*1.5*Math.sin(rx);
+  const sm = new THREE.Mesh(
+    new THREE.SphereGeometry(0.14, 16, 16),
+    new THREE.MeshStandardMaterial({ color:cycleCols[i], roughness:0.28 })
+  );
+  sm.position.set(x, y, z);
+  cycleG.add(sm);
+}
+// Inner glass sphere
+cycleG.add(new THREE.Mesh(
+  new THREE.SphereGeometry(0.38, 32, 32),
+  new THREE.MeshPhysicalMaterial({ color:0xddf5ee, transparent:true, opacity:0.28, roughness:0.04, transmission:0.8, thickness:0.6 })
+));
+
+/* ── STATE ── */
+let curSec = 0;
+const secNames  = ['Natura','Planeta','Chimie','Poluare','Degradare','Ciclu'];
+const allGroups = [null, earthG, molG, bottleG, degradG, cycleG];
+
+function activateSec(idx) {
+  if (curSec === idx) return;
+  curSec = idx;
+  document.getElementById('sec-id').innerHTML = `0${idx+1} / 06<br>${secNames[idx]}`;
+  document.querySelectorAll('.nav-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+  pts.visible = idx <= 1;
+  allGroups.forEach((g,i) => { if(g) g.visible = (i===idx); });
+}
+
+/* ── SCROLL TRIGGERS ── */
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero text in
+gsap.fromTo('.hero-eye', { opacity:0, y:20 }, { opacity:1, y:0, duration:1.2, delay:0.2 });
+gsap.fromTo('.hero-h1',  { opacity:0, y:30 }, { opacity:1, y:0, duration:1.4, delay:0.45 });
+gsap.fromTo('.hero-p',   { opacity:0, y:20 }, { opacity:1, y:0, duration:1.2, delay:0.75 });
+
+// Planet scroll
+ScrollTrigger.create({
+  trigger:'#s-planet', start:'top top', end:'bottom bottom',
+  onUpdate(self) {
+    const p = self.progress;
+    wrapMesh.material.opacity = p * 0.48;
+    foldMesh.material.opacity = p * 0.32;
+    earthG.rotation.y = performance.now()*0.00006 + p*0.9;
+    camera.position.z = 5.2 - p*1.5;
+  }
+});
+
+// Pollution scroll — bottle fragmentation
+ScrollTrigger.create({
+  trigger:'#s-poll', start:'top top', end:'bottom bottom',
+  onUpdate(self) {
+    const p = self.progress;
+    bottleG.rotation.y = p * Math.PI * 1.8;
+    bottleMesh.material.opacity = Math.max(0, 0.42 - p*0.35);
+    capMesh.material.opacity    = Math.max(0, 1 - p*1.2);
+    const fo = Math.max(0, (p-0.28)/0.72)*0.55;
+    frags.forEach(f => { f.material.opacity = fo; });
+  }
+});
+
+// Degradation scroll
+ScrollTrigger.create({
+  trigger:'#s-degrad', start:'top top', end:'bottom bottom',
+  onUpdate(self) {
+    const p = self.progress;
+    plasticB.scale.setScalar(Math.max(0.3, 1-p*0.65));
+    bioMesh.material.color.setHSL(0.33, 0.38+p*0.18, 0.44+p*0.12);
+    const mo = p*0.75;
+    mFrgs.forEach(f => { f.material.opacity = mo; });
+  }
+});
+
+/* ── SECTION DETECTION ── */
+const sections = document.querySelectorAll('section[data-screen-label]');
+const sObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting && e.intersectionRatio > 0.35) {
+      activateSec([...sections].indexOf(e.target));
+    }
+  });
+}, { threshold: 0.35 });
+sections.forEach(s => sObs.observe(s));
+
+/* ── MOLECULE INTERACTIONS ── */
+let dragging = false, prevMX = 0, prevMY = 0;
+const chemEl = document.getElementById('s-chem');
+
+document.getElementById('mol-pills').querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    buildMol(pill.dataset.mol);
+    showDetail(pill.dataset.mol);
+    gsap.fromTo(molG.scale,
+      { x:0.5, y:0.5, z:0.5 },
+      { x:1, y:1, z:1, duration:0.55, ease:'back.out(1.7)' }
+    );
+  });
+});
+
+function showDetail(key) {
+  const d = molData[key];
+  document.getElementById('md-code').textContent = key;
+  document.getElementById('md-name').textContent = d.name;
+  document.getElementById('md-formula').textContent = d.formula;
+  const ul = document.getElementById('md-bullets');
+  ul.innerHTML = '';
+  d.bullets.forEach(b => { const li=document.createElement('li'); li.textContent=b; ul.appendChild(li); });
+  document.getElementById('mol-detail').classList.add('vis');
+}
+
+document.getElementById('md-close').addEventListener('click', () => {
+  document.getElementById('mol-detail').classList.remove('vis');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('mol-detail').classList.remove('vis');
+});
+
+chemEl.addEventListener('mousedown', e => { dragging=true; prevMX=e.clientX; prevMY=e.clientY; });
+window.addEventListener('mouseup', () => { dragging=false; });
+window.addEventListener('mousemove', e => {
+  if (!dragging || curSec!==2) return;
+  molG.rotation.y += (e.clientX-prevMX)*0.012;
+  molG.rotation.x += (e.clientY-prevMY)*0.012;
+  prevMX=e.clientX; prevMY=e.clientY;
+});
+let tStart = null;
+chemEl.addEventListener('touchstart', e => { tStart={x:e.touches[0].clientX, y:e.touches[0].clientY}; });
+chemEl.addEventListener('touchmove', e => {
+  if (!tStart) return;
+  molG.rotation.y += (e.touches[0].clientX-tStart.x)*0.012;
+  molG.rotation.x += (e.touches[0].clientY-tStart.y)*0.012;
+  tStart={x:e.touches[0].clientX, y:e.touches[0].clientY};
+  e.preventDefault();
+}, { passive:false });
+
+/* ── RENDER LOOP ── */
+let t = 0;
+(function animate() {
+  requestAnimationFrame(animate);
+  t += 0.01;
+
+  // Float particles
+  const pa = pts.geometry.attributes.position;
+  for (let i = 0; i < PC; i++) {
+    pa.setY(i, pa.getY(i) + pSpd[i]);
+    pa.setX(i, pa.getX(i) + Math.sin(t*0.45+pOff[i])*0.0018);
+    if (pa.getY(i) > 4.8) pa.setY(i, -4.8);
+  }
+  pa.needsUpdate = true;
+
+  // Molecule auto-rotate
+  if (curSec===2 && !dragging) molG.rotation.y += 0.005;
+
+  // Bottle float
+  if (curSec===3) {
+    const bfloat = Math.sin(t*0.65)*0.09;
+    bottleMesh.position.y = bfloat;
+    capMesh.position.y = 1.91 + bfloat;
+    frags.forEach(f => {
+      f.position.x += f.userData.dr.x;
+      f.position.y += f.userData.dr.y;
+      f.rotation.x += 0.005; f.rotation.z += 0.008;
+      if (Math.abs(f.position.x)>2.8) f.userData.dr.x *= -1;
+      if (Math.abs(f.position.y)>2.8) f.userData.dr.y *= -1;
+    });
+  }
+
+  // Micro-frag drift
+  if (curSec===4) {
+    mFrgs.forEach(f => {
+      f.position.x += f.userData.dr.x;
+      f.position.y += f.userData.dr.y;
+      if (Math.abs(f.position.x+1.3)>1.8) f.userData.dr.x *= -1;
+      if (Math.abs(f.position.y)>1.6) f.userData.dr.y *= -1;
+    });
+    bioMesh.rotation.y += 0.004;
+  }
+
+  // Cycle ring
+  if (curSec===5) {
+    cycleG.rotation.y += 0.006;
+    ringM.rotation.z += 0.002;
+  }
+
+  renderer.render(scene, camera);
+})();
+
+/* ── RESIZE ── */
+window.addEventListener('resize', () => {
+  camera.aspect = W()/H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
+
+/* ── SOUND TOGGLE ── */
+let sndOn = false;
+document.getElementById('sound-btn').addEventListener('click', () => {
+  sndOn = !sndOn;
+  document.getElementById('sound-lbl').textContent = sndOn ? 'Sunet pornit' : 'Sunet oprit';
+  document.getElementById('w2').setAttribute('opacity', sndOn ? '0.9' : '0.35');
+});
+
+/* ── EXPOSE for tweaks ── */
+window._btw = { pMat, molG, cycleG, earthG };
+
+/* ── LOADING ── */
+const ldFill = document.getElementById('ld-fill');
+const ldTitle = document.querySelector('.ld-title');
+const ldSub   = document.querySelector('.ld-sub');
+setTimeout(()=>{ ldTitle.classList.add('in'); }, 100);
+setTimeout(()=>{ ldSub.classList.add('in'); }, 350);
+let prog = 0;
+const ldInt = setInterval(()=>{
+  prog = Math.min(prog + Math.random()*3.5+1.2, 100);
+  ldFill.style.width = prog+'%';
+  if (prog>=100) {
+    clearInterval(ldInt);
+    setTimeout(()=>{ document.getElementById('loading').classList.add('out'); activateSec(0); }, 600);
+  }
+}, 45);
+
+activateSec(0);
+</script>
+
+<!-- ── TWEAKS PANEL ── -->
+<script>
+(function(){
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "particleOpacity": 0.9,
+    "particleColor": "#422efc",
+    "molAutoRotate": true,
+    "ringSpeed": 4
+  }/*EDITMODE-END*/;
+
+  let ts = {...TWEAK_DEFAULTS};
+
+  const panel = document.createElement('div');
+  panel.id = 'tw-panel';
+  panel.style.cssText = `
+    position:fixed;bottom:4.5rem;right:1.5rem;width:234px;
+    background:rgba(245,241,232,0.94);backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.72);padding:1.5rem;
+    z-index:9999;display:none;
+    font-family:'Space Mono',monospace;
+    box-shadow:0 8px 36px rgba(40,49,38,0.1);
+  `;
+  panel.innerHTML = `
+    <div style="font-size:0.5rem;letter-spacing:0.32em;text-transform:uppercase;color:rgba(40,49,38,0.45);margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center;">
+      Tweaks
+      <button id="tw-x" style="background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.5rem;letter-spacing:0.22em;color:rgba(40,49,38,0.4);text-transform:uppercase;">Închide</button>
+    </div>
+    <div style="margin-bottom:0.9rem;">
+      <div style="font-size:0.45rem;letter-spacing:0.22em;color:rgba(40,49,38,0.45);text-transform:uppercase;margin-bottom:0.35rem;">Culoare particule</div>
+      <input type="color" id="tw-pc" value="${ts.particleColor}" style="width:100%;height:26px;border:1px solid rgba(40,49,38,0.12);cursor:pointer;background:none;border-radius:2px;">
+    </div>
+    <div style="margin-bottom:0.9rem;">
+      <div style="font-size:0.45rem;letter-spacing:0.22em;color:rgba(40,49,38,0.45);text-transform:uppercase;margin-bottom:0.35rem;">Opacitate particule · <span id="tw-op-v">${ts.particleOpacity}</span></div>
+      <input type="range" id="tw-op" min="0.1" max="0.9" step="0.05" value="${ts.particleOpacity}" style="width:100%;accent-color:#4f614a;">
+    </div>
+    <div style="margin-bottom:0.9rem;">
+      <div style="font-size:0.45rem;letter-spacing:0.22em;color:rgba(40,49,38,0.45);text-transform:uppercase;margin-bottom:0.35rem;">Viteză inel · <span id="tw-rs-v">${ts.ringSpeed}</span></div>
+      <input type="range" id="tw-rs" min="0.1" max="4" step="0.1" value="${ts.ringSpeed}" style="width:100%;accent-color:#4f614a;">
+    </div>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0;">
+      <input type="checkbox" id="tw-mr" ${ts.molAutoRotate?'checked':''} style="accent-color:#4f614a;">
+      <label for="tw-mr" style="font-size:0.45rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(40,49,38,0.55);cursor:pointer;">Auto-rotație moleculă</label>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  function show(){ panel.style.display='block'; }
+  function hide(){
+    panel.style.display='none';
+    window.parent.postMessage({ type:'__edit_mode_dismissed' }, '*');
+  }
+
+  window.addEventListener('message', e => {
+    if(e.data?.type==='__activate_edit_mode') show();
+    if(e.data?.type==='__deactivate_edit_mode') hide();
+  });
+  window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+
+  document.getElementById('tw-x').addEventListener('click', hide);
+  document.addEventListener('keydown', e => { if(e.key==='Escape' && panel.style.display==='block') hide(); });
+
+  const emit = () => window.parent.postMessage({ type:'__edit_mode_set_keys', edits:ts }, '*');
+
+  document.getElementById('tw-pc').addEventListener('input', e => {
+    ts.particleColor = e.target.value;
+    if(window._btw) window._btw.pMat.color.set(e.target.value);
+    emit();
+  });
+  document.getElementById('tw-op').addEventListener('input', e => {
+    ts.particleOpacity = parseFloat(e.target.value);
+    document.getElementById('tw-op-v').textContent = ts.particleOpacity;
+    if(window._btw) window._btw.pMat.opacity = ts.particleOpacity;
+    emit();
+  });
+  document.getElementById('tw-rs').addEventListener('input', e => {
+    ts.ringSpeed = parseFloat(e.target.value);
+    document.getElementById('tw-rs-v').textContent = ts.ringSpeed;
+    emit();
+  });
+  document.getElementById('tw-mr').addEventListener('change', e => {
+    ts.molAutoRotate = e.target.checked;
+    emit();
+  });
+})();
+</script>
+
+</body>
+</html>

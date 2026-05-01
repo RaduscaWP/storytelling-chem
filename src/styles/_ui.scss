@@ -1,0 +1,113 @@
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  padding: 28px 32px;
+  color: var(--color-text);
+}
+
+.ui-logo {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.ui-copyright,
+.ui-author {
+  display: block;
+  font-size: var(--ui-font-size-sm);
+  color: var(--color-text-dim);
+  letter-spacing: var(--ui-letter-spacing);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.ui-top-right {
+  position: absolute;
+  top: 28px;
+  right: 32px;
+  text-align: right;
+  max-width: 220px;
+}
+
+.ui-label {
+  display: block;
+  font-size: var(--ui-font-size-sm);
+  letter-spacing: var(--ui-letter-spacing);
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.ui-top-right p {
+  font-size: var(--ui-font-size-md);
+  line-height: 1.7;
+  letter-spacing: var(--ui-letter-spacing);
+}
+
+.ui-bottom-left {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  font-size: var(--ui-font-size-sm);
+  letter-spacing: var(--ui-letter-spacing);
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+// Object label overlay (ca igloo portfolio label)
+.ui-object-label {
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  transform: translateY(-50%);
+  pointer-events: all;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+
+  &.visible { opacity: 1; }
+
+  .obj-label-code {
+    display: block;
+    font-size: var(--ui-font-size-sm);
+    letter-spacing: 0.12em;
+    opacity: 0.7;
+  }
+
+  .obj-label-name {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .obj-label-temp {
+    margin-top: 20px;
+    font-size: var(--ui-font-size-sm);
+    letter-spacing: var(--ui-letter-spacing);
+    display: flex;
+    gap: 12px;
+    opacity: 0.8;
+  }
+
+  .obj-label-date {
+    display: block;
+    margin-top: 30px;
+    font-size: var(--ui-font-size-sm);
+    letter-spacing: var(--ui-letter-spacing);
+    opacity: 0.8;
+  }
+
+  .obj-label-cta {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--ui-font-size-sm);
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    padding-bottom: 2px;
+  }
+}
