@@ -9,6 +9,10 @@ const canvas = document.getElementById('canvas-bg')
 const W = () => window.innerWidth
 const H = () => window.innerHeight
 const isMob = W() < 768
+// Reactive: re-evaluated on every read so resize/orientation flips work without reload.
+const isMobile = () => window.innerWidth < 768
+const MOBILE_OFFSET_Y = 1.0
+const MOBILE_CAM_Z = 7.2
 
 /* ── RENDERER ── */
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMob })
@@ -19,6 +23,18 @@ renderer.setClearColor(0x000000, 0)
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(50, W() / H(), 0.1, 100)
 camera.position.set(0, 0, 5.2)
+
+function applyMobileCamera() {
+  if (isMobile()) {
+    camera.fov = 60
+    camera.position.z = MOBILE_CAM_Z
+  } else {
+    camera.fov = 50
+    // Don't override z here — Planet scroll-trigger drives it during scroll.
+  }
+  camera.updateProjectionMatrix()
+}
+applyMobileCamera()
 
 /* ── LIGHTS ── */
 scene.add(new THREE.AmbientLight(0xf5f1e8, 1.4))
@@ -110,7 +126,8 @@ const fMat = new THREE.MeshPhysicalMaterial({
 })
 const foldMesh = new THREE.Mesh(fGeo, fMat)
 earthG.add(foldMesh)
-earthG.position.set(2.2, 0, 0)
+if (isMobile()) earthG.position.set(0, MOBILE_OFFSET_Y, 0)
+else earthG.position.set(2.2, 0, 0)
 earthG.scale.setScalar(1.3)
 // Slight axial tilt so the auto-rotation reads more naturally.
 earthG.rotation.z = 0.32
@@ -237,7 +254,8 @@ const molData = {
 const MOL_SCALE = 0.5
 const molG = new THREE.Group()
 molG.visible = false
-molG.position.set(1.85, 0, 0)
+if (isMobile()) molG.position.set(0, MOBILE_OFFSET_Y, 0)
+else molG.position.set(1.85, 0, 0)
 molG.scale.setScalar(MOL_SCALE)
 scene.add(molG)
 
@@ -309,7 +327,8 @@ const BOTTLE_SCALE = 0.85
 const bottleG = new THREE.Group()
 bottleG.visible = false
 bottleG.scale.setScalar(BOTTLE_SCALE)
-bottleG.position.set(1.3, 0, 0)
+if (isMobile()) bottleG.position.set(0, MOBILE_OFFSET_Y, 0)
+else bottleG.position.set(1.3, 0, 0)
 scene.add(bottleG)
 
 // Inner pivot lets the GLB bob without disturbing bottleG's tween-controlled y.
@@ -359,7 +378,8 @@ gltfLoader.load(
 /* ── CYCLE: SWAPPABLE MATERIAL MODELS ── */
 const cycleG = new THREE.Group()
 cycleG.visible = false
-cycleG.position.set(1.7, 0, 0) // ajustat în updateCycleAnchor() ca să se alinieze cu #cycle-3d-anchor
+if (isMobile()) cycleG.position.set(0, MOBILE_OFFSET_Y, 0)
+else cycleG.position.set(1.7, 0, 0) // ajustat în updateCycleAnchor() ca să se alinieze cu #cycle-3d-anchor
 scene.add(cycleG)
 
 // Pivot interior — primește rotirea din drag/auto-rotate, separat de poziția cycleG
@@ -702,12 +722,19 @@ ScrollTrigger.create({
   end: 'bottom bottom',
   onUpdate(self) {
     const p = self.progress
-    const xP = THREE.MathUtils.clamp(p / 0.5, 0, 1)
-    earthG.position.x = gsap.utils.interpolate(2.2, -2.0, xEase(xP))
-    // Slight vertical drift so it feels less rigid.
-    earthG.position.y = -0.15 + Math.sin(p * Math.PI) * 0.18
-    // Grow gradually across the whole range — bigger overall than before.
-    earthG.scale.setScalar(1.3 + p * 0.9)
+    if (isMobile()) {
+      // Mobile: stay centered above the glass card; drift down + scale slightly.
+      earthG.position.x = 0
+      earthG.position.y = MOBILE_OFFSET_Y - p * 0.35 + Math.sin(p * Math.PI) * 0.12
+      earthG.scale.setScalar(1.05 + p * 0.55)
+    } else {
+      const xP = THREE.MathUtils.clamp(p / 0.5, 0, 1)
+      earthG.position.x = gsap.utils.interpolate(2.2, -2.0, xEase(xP))
+      // Slight vertical drift so it feels less rigid.
+      earthG.position.y = -0.15 + Math.sin(p * Math.PI) * 0.18
+      // Grow gradually across the whole range — bigger overall than before.
+      earthG.scale.setScalar(1.3 + p * 0.9)
+    }
   },
 })
 
@@ -723,7 +750,8 @@ ScrollTrigger.create({
     const wrapIn = THREE.MathUtils.smoothstep(p, 0.18, 0.7)
     wrapMesh.material.opacity = wrapIn * 0.48
     foldMesh.material.opacity = wrapIn * 0.32
-    camera.position.z = 5.2 - p * 1.5
+    const baseZ = isMobile() ? MOBILE_CAM_Z : 5.2
+    camera.position.z = baseZ - p * 1.5
   },
 })
 
@@ -736,13 +764,20 @@ ScrollTrigger.create({
   end: 'bottom bottom',
   onUpdate(self) {
     const p = self.progress
-    // The bottle's traversal is centered on the panel cross-fade (mid p≈0.5) so it
-    // doesn't run through the text before the text fades. It also arcs DOWN
-    // visibly — a swing rather than a straight slide — peaking at the same midpoint.
-    const bP = THREE.MathUtils.clamp((p - 0.25) / 0.5, 0, 1)
-    bottleG.position.x = gsap.utils.interpolate(1.3, -1.3, xEase(bP))
-    bottleG.position.y = -Math.sin(bP * Math.PI) * 0.9
-    bottleG.scale.setScalar(BOTTLE_SCALE * (1 + p * 0.45))
+    if (isMobile()) {
+      // Mobile: bottle bobs in place above the glass card while panels cross-fade.
+      bottleG.position.x = 0
+      bottleG.position.y = MOBILE_OFFSET_Y + Math.sin(p * Math.PI) * 0.25
+      bottleG.scale.setScalar(BOTTLE_SCALE * (0.85 + p * 0.3))
+    } else {
+      // The bottle's traversal is centered on the panel cross-fade (mid p≈0.5) so it
+      // doesn't run through the text before the text fades. It also arcs DOWN
+      // visibly — a swing rather than a straight slide — peaking at the same midpoint.
+      const bP = THREE.MathUtils.clamp((p - 0.25) / 0.5, 0, 1)
+      bottleG.position.x = gsap.utils.interpolate(1.3, -1.3, xEase(bP))
+      bottleG.position.y = -Math.sin(bP * Math.PI) * 0.9
+      bottleG.scale.setScalar(BOTTLE_SCALE * (1 + p * 0.45))
+    }
     // Panel cross-fade — A solo until ~p=0.32, hand over to B by ~p=0.6.
     if (pollPanelA) pollPanelA.style.opacity = 1 - THREE.MathUtils.smoothstep(p, 0.32, 0.52)
     if (pollPanelB) pollPanelB.style.opacity = THREE.MathUtils.smoothstep(p, 0.40, 0.60)
@@ -965,6 +1000,10 @@ animate()
 // Aliniază cycleG.position.x cu centrul orizontal al elementului #cycle-3d-anchor
 // (coloana dreaptă din layout-ul §6). Rulat la load + resize.
 function updateCycleAnchor() {
+  if (isMobile()) {
+    cycleG.position.set(0, MOBILE_OFFSET_Y, 0)
+    return
+  }
   const anchor = document.getElementById('cycle-3d-anchor')
   if (!anchor) return
   const r = anchor.getBoundingClientRect()
@@ -978,8 +1017,19 @@ function updateCycleAnchor() {
 /* ── RESIZE ── */
 window.addEventListener('resize', () => {
   camera.aspect = W() / H()
-  camera.updateProjectionMatrix()
+  applyMobileCamera()
   renderer.setSize(W(), H())
+  // Re-seat the static artifacts when crossing the mobile breakpoint so a portrait
+  // ↔ landscape rotation doesn't leave them off-center.
+  if (isMobile()) {
+    earthG.position.set(0, MOBILE_OFFSET_Y, 0)
+    molG.position.set(0, MOBILE_OFFSET_Y, 0)
+    bottleG.position.set(0, MOBILE_OFFSET_Y, 0)
+  } else {
+    earthG.position.set(2.2, 0, 0)
+    molG.position.set(1.85, 0, 0)
+    bottleG.position.set(1.3, 0, 0)
+  }
   updateCycleAnchor()
 })
 updateCycleAnchor()
